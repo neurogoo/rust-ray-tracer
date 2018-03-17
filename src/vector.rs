@@ -17,8 +17,6 @@ pub trait VecMath {
     fn length(&self) -> f32;
     fn squared_length(&self) -> f32;
     fn make_unit_vector(&mut self);
-    fn dot(&self, &Vec3) -> Vec3;
-    fn cross(&self, &Vec3) -> Vec3;
 }
 
 impl Vec3 {
@@ -52,18 +50,6 @@ impl Vec3 {
         self.0 = self.0 * k;
         self.1 = self.1 * k;
         self.2 = self.2 * k;
-    }
-
-    fn dot(&self, other: &Vec3) -> Vec3 {
-        Vec3(self.0 * other.0, self.1 * other.1, self.2 * other.2)
-    }
-
-    fn cross(&self, other: &Vec3) -> Vec3 {
-        Vec3(
-            self.1 * other.2 - self.2 * other.1,
-            -(self.0 * other.2 - self.2 * other.0),
-            self.0 * other.1 - self.1 * other.0,
-        )
     }
 }
 
@@ -118,4 +104,16 @@ impl Div<f32> for Vec3 {
 pub fn unit_vector(v: Vec3) -> Vec3 {
     let length = v.length();
     v / length
+}
+
+pub fn dot(first: &Vec3, other: &Vec3) -> f32 {
+    first.0 * other.0 + first.1 * other.1 + first.2 * other.2
+}
+
+pub fn cross(first: &Vec3, other: &Vec3) -> Vec3 {
+    Vec3(
+        first.1 * other.2 - first.2 * other.1,
+        -(first.0 * other.2 - first.2 * other.0),
+        first.0 * other.1 - first.1 * other.0,
+    )
 }

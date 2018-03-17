@@ -10,7 +10,7 @@ impl Ray {
         Ray { a: a, b: b }
     }
 
-    fn origin(&self) -> Vec3 {
+    pub fn origin(&self) -> Vec3 {
         self.a
     }
 
@@ -18,7 +18,7 @@ impl Ray {
         self.b
     }
 
-    fn point_at_parameter(&self, t: f32) -> Vec3 {
+    pub fn point_at_parameter(&self, t: f32) -> Vec3 {
         self.a + self.b * t
     }
 }
