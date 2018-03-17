@@ -1,0 +1,6 @@
+[package]
+name = "rust-ray-tracer"
+version = "0.1.0"
+authors = ["Toni Okuogume <tokuogume@gmail.com>"]
+
+[dependencies]
