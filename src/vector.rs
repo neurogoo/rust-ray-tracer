@@ -42,7 +42,7 @@ impl Vec3 {
     fn length(&self) -> f32 {
         (self.0 * self.0 + self.1 * self.1 + self.2 * self.2).sqrt()
     }
-    fn squared_length(&self) -> f32 {
+    pub fn squared_length(&self) -> f32 {
         (self.0 * self.0 + self.1 * self.1 + self.2 * self.2)
     }
     fn make_unit_vector(&mut self) {
