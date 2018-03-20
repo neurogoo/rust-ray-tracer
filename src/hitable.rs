@@ -19,7 +19,7 @@ impl<'a> HitRecord<'a> {
         }
     }
 
-    pub fn scatter(&self, r_in: &Ray) -> Option<(Ray, Vec3)> {
+    pub fn scatter(&self, r_in: &Ray) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
         self.material.scatter(r_in, self)
     }
 }

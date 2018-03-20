@@ -3,14 +3,14 @@ use hitable::*;
 use vector::*;
 use material::*;
 
-pub struct Sphere<'a> {
+pub struct Sphere {
     center: Vec3,
     radius: f32,
-    material: &'a Material,
+    material: Box<Material>,
 }
 
-impl<'a> Sphere<'a> {
-    pub fn new(cen: Vec3, r: f32, material: &'a Material) -> Sphere {
+impl Sphere {
+    pub fn new(cen: Vec3, r: f32, material: Box<Material>) -> Sphere {
         Sphere {
             center: cen,
             radius: r,
@@ -19,7 +19,7 @@ impl<'a> Sphere<'a> {
     }
 }
 
-impl<'a> Hitable for Sphere<'a> {
+impl Hitable for Sphere {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
         let oc = r.origin() - self.center;
         let a = dot(&r.direction(), &r.direction());
@@ -35,7 +35,7 @@ impl<'a> Hitable for Sphere<'a> {
                     t,
                     p,
                     (p - self.center) / self.radius,
-                    self.material,
+                    &*self.material,
                 ));
             }
             temp = (-b + (b * b - a * c).sqrt()) / a;
@@ -46,7 +46,7 @@ impl<'a> Hitable for Sphere<'a> {
                     t,
                     p,
                     (p - self.center) / self.radius,
-                    self.material,
+                    &*self.material,
                 ));
             }
         }
