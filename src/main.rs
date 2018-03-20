@@ -105,17 +105,20 @@ fn main() {
         aperture,
         dist_to_focus,
     );
-    let mut rng = thread_rng();
     for j in (0..ny).rev() {
         for i in 0..nx {
-            let mut col = Vec3(0.0, 0.0, 0.0);
-            for _s in (0..ns) {
-                let u = (i as f32 + rng.gen::<f32>()) / nx as f32;
-                let v = (j as f32 + rng.gen::<f32>()) / ny as f32;
-                let ray = camera.get_ray(u, v);
-                let _p = ray.point_at_parameter(2.0);
-                col = col + color(&ray, &world, 0);
-            }
+            let mut col: Vec3 = (0..ns)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = thread_rng();
+                    let u = (i as f32 + rng.gen::<f32>()) / nx as f32;
+                    let v = (j as f32 + rng.gen::<f32>()) / ny as f32;
+                    let ray = camera.get_ray(u, v);
+                    let _p = ray.point_at_parameter(2.0);
+                    color(&ray, &world, 0)
+                })
+                .reduce_with(|sum, val| sum + val)
+                .unwrap();
             col = col / (ns as f32);
             col = Vec3(col.0.sqrt(), col.1.sqrt(), col.2.sqrt());
             let ir = (255.99 * col.r()) as u32;

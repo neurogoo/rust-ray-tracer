@@ -24,7 +24,7 @@ impl<'a> HitRecord<'a> {
     }
 }
 
-pub trait Hitable {
+pub trait Hitable: Sync {
     fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
 }
 
