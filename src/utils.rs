@@ -20,7 +20,7 @@ pub fn random_in_unit_sphere() -> Vec3 {
 
 pub fn random_scene<'a>() -> HitableList<'a> {
     let mut rng = thread_rng();
-    let n = 500;
+    let n = 50000;
     let mut world = HitableList::new();
     world.list.push(Box::new(Sphere::new(
         Vec3(0.0, -1000.0, 0.0),
@@ -37,8 +37,11 @@ pub fn random_scene<'a>() -> HitableList<'a> {
             );
             if (center - Vec3(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
-                    world.list.push(Box::new(Sphere::new(
+                    world.list.push(Box::new(MovingSphere::new(
                         center,
+                        center + Vec3(0.0, 0.5 * rng.gen::<f32>(), 0.0),
+                        0.0,
+                        1.0,
                         0.2,
                         Box::new(Labertian::new(Vec3(
                             rng.gen::<f32>() * rng.gen::<f32>(),

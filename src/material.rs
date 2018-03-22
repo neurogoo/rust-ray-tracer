@@ -27,7 +27,7 @@ impl Labertian {
 impl Material for Labertian {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
         let target = rec.p + rec.normal + random_in_unit_sphere();
-        let scattered = Ray::new(rec.p, target - rec.p);
+        let scattered = Ray::new(rec.p, target - rec.p, r_in.time());
         let attenuation = self.albedo;
         return Scattered::Yes((scattered, attenuation));
     }
@@ -56,7 +56,11 @@ impl Metal {
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
         let reflected = reflect(&unit_vector(r_in.direction()), &rec.normal);
-        let scattered = Ray::new(rec.p, reflected + random_in_unit_sphere() * self.fuzz);
+        let scattered = Ray::new(
+            rec.p,
+            reflected + random_in_unit_sphere() * self.fuzz,
+            r_in.time(),
+        );
         let attenuation = self.albedo;
         if dot(&scattered.direction(), &rec.normal) > 0.0 {
             Scattered::Yes((scattered, attenuation))
@@ -106,9 +110,9 @@ impl Material for Dielectric {
         }
         let mut rng = thread_rng();
         if rng.gen::<f32>() < reflect_prob {
-            scattered = Ray::new(rec.p, reflected);
+            scattered = Ray::new(rec.p, reflected, r_in.time());
         } else {
-            scattered = Ray::new(rec.p, refracted);
+            scattered = Ray::new(rec.p, refracted, r_in.time());
         }
         Scattered::Yes((scattered, attenuation))
     }

@@ -95,7 +95,7 @@ fn main() {
     let lookat = Vec3(0.0, 0.0, 0.0);
     //   let dist_to_focus = (lookfrom - lookat).length();
     let dist_to_focus = 10.0;
-    let aperture = 0.1;
+    let aperture = 0.0;
     let camera = Camera::new(
         lookfrom,
         lookat,
@@ -104,6 +104,8 @@ fn main() {
         nx as f32 / ny as f32,
         aperture,
         dist_to_focus,
+        0.0,
+        1.0,
     );
     for j in (0..ny).rev() {
         for i in 0..nx {
