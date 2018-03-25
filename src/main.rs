@@ -24,11 +24,11 @@ use camera::*;
 use material::*;
 use utils::*;
 
-fn color(r: &Ray, world: &HitableList, depth: u32) -> Vec3 {
+fn color(r: &Ray, world: &Hitable, depth: u32) -> Vec3 {
     match world.hit(r, 0.001, f32::MAX) {
         Some(rec) => {
             if depth < 50 {
-                match rec.material.scatter(r, &rec) {
+                match scatter(rec.material, r, &rec) {
                     Scattered::Yes((scattered, attenuation)) => {
                         return attenuation * color(&scattered, world, depth + 1)
                     }
@@ -54,12 +54,9 @@ fn main() {
     let mut f = File::create("/home/tokuogum/Rust/rust-ray-tracer/picture.ppm")
         .expect("Couldn't create picture file");
     write!(&mut f, "P3\n{} {}\n255\n", nx, ny).unwrap();
-    //    let met2 = Metal::new(Vec3(0.8, 0.8, 0.8), 0.3);
-    let r = (f32::consts::PI / 4.0).cos();
-    let lam1test = Labertian::new(Vec3(0.0, 0.0, 1.0));
-    let lam2test = Labertian::new(Vec3(1.0, 0.0, 0.0));
-    let world = random_scene();
+    let mut world_list = random_scene();
     /*let mut world = HitableList::new();
+    let r = (f32::consts::PI / 4.0).cos();
     world
         .list
         .push(Box::new(Sphere::new(Vec3(-r, 0.0, -1.0), r, &lam1test)));
@@ -107,6 +104,9 @@ fn main() {
         0.0,
         1.0,
     );
+    println!("Starting making bvh at {}", now.elapsed().as_secs());
+    let bbox = Hitable::BvhNode(BvhNode::new(&mut world_list, 0.0, 1.0));
+    println!("Finishing making bvh at {}", now.elapsed().as_secs());
     for j in (0..ny).rev() {
         for i in 0..nx {
             let mut col: Vec3 = (0..ns)
@@ -117,7 +117,7 @@ fn main() {
                     let v = (j as f32 + rng.gen::<f32>()) / ny as f32;
                     let ray = camera.get_ray(u, v);
                     let _p = ray.point_at_parameter(2.0);
-                    color(&ray, &world, 0)
+                    color(&ray, &bbox, 0)
                 })
                 .reduce_with(|sum, val| sum + val)
                 .unwrap();

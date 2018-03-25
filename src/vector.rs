@@ -2,6 +2,7 @@ use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Mul;
 use std::ops::Div;
+use std::ops::Index;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3(pub f32, pub f32, pub f32);
@@ -98,6 +99,19 @@ impl Div<f32> for Vec3 {
 
     fn div(self, t: f32) -> Vec3 {
         Vec3(self.0 / t, self.1 / t, self.2 / t)
+    }
+}
+
+impl Index<u8> for Vec3 {
+    type Output = f32;
+
+    fn index(&self, index: u8) -> &f32 {
+        match index {
+            0 => &self.0,
+            1 => &self.1,
+            2 => &self.2,
+            _ => &0.0,
+        }
     }
 }
 
