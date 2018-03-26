@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ray::*;
 use hitable::*;
 use vector::*;

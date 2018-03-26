@@ -15,6 +15,8 @@ mod sphere;
 mod camera;
 mod material;
 mod utils;
+mod texture;
+mod perlin;
 
 use vector::*;
 use ray::*;
@@ -28,7 +30,7 @@ fn color(r: &Ray, world: &Hitable, depth: u32) -> Vec3 {
     match world.hit(r, 0.001, f32::MAX) {
         Some(rec) => {
             if depth < 50 {
-                match scatter(rec.material, r, &rec) {
+                match rec.material.scatter(r, &rec) {
                     Scattered::Yes((scattered, attenuation)) => {
                         return attenuation * color(&scattered, world, depth + 1)
                     }
@@ -54,40 +56,7 @@ fn main() {
     let mut f = File::create("/home/tokuogum/Rust/rust-ray-tracer/picture.ppm")
         .expect("Couldn't create picture file");
     write!(&mut f, "P3\n{} {}\n255\n", nx, ny).unwrap();
-    let mut world_list = random_scene();
-    /*let mut world = HitableList::new();
-    let r = (f32::consts::PI / 4.0).cos();
-    world
-        .list
-        .push(Box::new(Sphere::new(Vec3(-r, 0.0, -1.0), r, &lam1test)));
-    world
-        .list
-        .push(Box::new(Sphere::new(Vec3(r, 0.0, -1.0), r, &lam2test)));
-    world.list.push(Box::new(Sphere::new(
-        Vec3(0.0, 0.0, -1.0),
-        0.5,
-        Box::new(Labertian::new(Vec3(0.1, 0.2, 0.5))),
-    )));
-    world.list.push(Box::new(Sphere::new(
-        Vec3(0.0, -100.5, -1.0),
-        100.0,
-        Box::new(Labertian::new(Vec3(0.8, 0.8, 0.0))),
-    )));
-    world.list.push(Box::new(Sphere::new(
-        Vec3(1.0, 0.0, -1.0),
-        0.5,
-        Box::new(Metal::new(Vec3(0.8, 0.6, 0.2), 0.0)),
-    )));
-    world.list.push(Box::new(Sphere::new(
-        Vec3(-1.0, 0.0, -1.0),
-        0.5,
-        Box::new(Dielectric::new(1.5)),
-    )));
-    world.list.push(Box::new(Sphere::new(
-        Vec3(-1.0, 0.0, -1.0),
-        -0.45,
-        Box::new(Dielectric::new(1.5)),
-    )));*/
+    /*let mut world_list = random_scene();
     let lookfrom = Vec3(13.0, 2.0, 3.0);
     let lookat = Vec3(0.0, 0.0, 0.0);
     //   let dist_to_focus = (lookfrom - lookat).length();
@@ -103,7 +72,24 @@ fn main() {
         dist_to_focus,
         0.0,
         1.0,
+    );*/
+    let mut world_list = two_perlin_spheres();
+    let lookfrom = Vec3(13.0, 2.0, 3.0);
+    let lookat = Vec3(0.0, 0.0, 0.0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.0;
+    let camera = Camera::new(
+        lookfrom,
+        lookat,
+        Vec3(0.0, 1.0, 0.0),
+        20.0,
+        nx as f32 / ny as f32,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
     );
+
     println!("Starting making bvh at {}", now.elapsed().as_secs());
     let bbox = Hitable::BvhNode(BvhNode::new(&mut world_list, 0.0, 1.0));
     println!("Finishing making bvh at {}", now.elapsed().as_secs());
