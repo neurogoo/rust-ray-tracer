@@ -1,12 +1,125 @@
 use std::f32;
 use rand::{thread_rng, Rng};
+use std::path::Path;
+use stb_image::image;
 
-use vector::*;
+use vector::Vec3;
 use hitable::*;
 use material::*;
 use sphere::*;
 use ray::*;
 use texture::*;
+use camera::Camera;
+
+pub fn cornell_box(nx: u32, ny: u32) -> (Camera, Vec<Hitable>) {
+    let mut list: Vec<Hitable> = Vec::new();
+    let red = new_labertian(new_constant_texture(Vec3(0.65, 0.05, 0.05)));
+    let white = new_labertian(new_constant_texture(Vec3(0.73, 0.73, 0.73)));
+    let green = new_labertian(new_constant_texture(Vec3(0.12, 0.45, 0.15)));
+    let light = new_diffuce(new_constant_texture(Vec3(15.0, 15.0, 15.0)));
+    list.push(new_flip_normals(new_yzrect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        green,
+    )));
+    list.push(new_yzrect(0.0, 555.0, 0.0, 555.0, 0.0, red));
+    list.push(new_xzrect(213.0, 343.0, 227.0, 332.0, 554.0, light));
+    list.push(new_flip_normals(new_xzrect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    )));
+    list.push(new_xzrect(0.0, 555.0, 0.0, 555.0, 0.0, white.clone()));
+    list.push(new_flip_normals(new_xyrect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white,
+    )));
+
+    let lookfrom = Vec3(278.0, 278.0, -800.0);
+    let lookat = Vec3(278.0, 278.0, 0.0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.0;
+    let vfov = 40.0;
+    let cam = Camera::new(
+        lookfrom,
+        lookat,
+        Vec3(0.0, 1.0, 0.0),
+        vfov,
+        nx as f32 / ny as f32,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+    (cam, list)
+}
+
+pub fn simple_light() -> Vec<Hitable> {
+    let pertext = Texture::NoiseTexture(NoiseTexture::new(4.0));
+    let mut list: Vec<Hitable> = Vec::new();
+    list.push(new_sphere(
+        Vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        new_labertian(pertext.clone()),
+    ));
+    list.push(new_sphere(
+        Vec3(0.0, 2.0, 0.0),
+        2.0,
+        new_labertian(pertext.clone()),
+    ));
+    // list.push(new_sphere(
+    //     Vec3(0.0, 7.0, 0.0),
+    //     2.0,
+    //     new_diffuce(Texture::ConstantTexture(ConstantTexture::new(Vec3(
+    //         4.0,
+    //         4.0,
+    //         4.0,
+    //     )))),
+    // ));
+    list.push(new_xyrect(
+        3.0,
+        5.0,
+        1.0,
+        3.0,
+        -2.0,
+        new_diffuce(Texture::ConstantTexture(ConstantTexture::new(Vec3(
+            4.0,
+            4.0,
+            4.0,
+        )))),
+    ));
+    list
+}
+
+fn new_flip_normals(hitable: Hitable) -> Hitable {
+    Hitable::FlipNormals(FlipNormals::new(hitable))
+}
+
+fn new_diffuce(albedo: Texture) -> Material {
+    Material::DiffuceLight(DiffuceLight::new(albedo))
+}
+
+fn new_xyrect(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material) -> Hitable {
+    Hitable::XYRect(XYRect::new(x0, x1, y0, y1, k, material))
+}
+
+fn new_xzrect(x0: f32, x1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
+    Hitable::XZRect(XZRect::new(x0, x1, z0, z1, k, material))
+}
+
+fn new_yzrect(y0: f32, y1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
+    Hitable::YZRect(YZRect::new(y0, y1, z0, z1, k, material))
+}
 
 pub fn random_in_unit_sphere() -> Vec3 {
     let mut rng = thread_rng();
@@ -28,11 +141,50 @@ fn new_labertian(albedo: Texture) -> Material {
     Material::Labertian(Labertian::new(albedo))
 }
 
+fn new_constant_texture(v: Vec3) -> Texture {
+    Texture::ConstantTexture(ConstantTexture::new(v))
+}
+
+fn new_labertian_image(path: &str) -> Material {
+    let path = Path::new(path);
+    let result = image::load(path);
+    let data: Vec<u8>;
+    let nx: usize;
+    let ny: usize;
+    match result {
+        image::LoadResult::ImageU8(image) => {
+            data = image.data;
+            nx = image.width;
+            ny = image.height;
+        }
+        _ => panic!("Couldn't find data"),
+    }
+    Material::Labertian(Labertian::new(Texture::ImageTexture(ImageTexture::new(
+        data,
+        nx as u32,
+        ny as u32,
+    ))))
+}
+
 pub fn two_perlin_spheres() -> Vec<Hitable> {
-    let pertext = Texture::NoiseTexture(NoiseTexture::new());
+    let pertext = Texture::NoiseTexture(NoiseTexture::new(1.5));
     let mut hitables: Vec<Hitable> = Vec::new();
-    hitables.push(new_sphere(Vec3(0.0, -1000.0, 0.0), 1000.0, new_labertian(pertext.clone())));
-    hitables.push(new_sphere(Vec3(0.0, 2.0, 0.0), 2.0, new_labertian(pertext.clone())));
+    hitables.push(new_sphere(
+        Vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        new_labertian(pertext.clone()),
+    ));
+    hitables.push(new_sphere(
+        Vec3(0.0, 2.0, 0.0),
+        2.0,
+        new_labertian_image("/home/tokuogum/Rust/rust-ray-tracer/GreatestEarth.jpg"),
+    ));
+    /*    hitables.push(new_sphere(
+        Vec3(0.0, 2.0, 0.0),
+        2.0,
+        new_labertian(pertext.clone()),
+));*/
+
     hitables
 }
 
@@ -188,7 +340,16 @@ pub fn surrounding_box(box0: Aabb, box1: Aabb) -> Aabb {
     )
 }
 
-    /*let mut world = HitableList::new();
+pub fn get_sphere_uv(p: &Vec3) -> (f32, f32) {
+    let phi = p.z().atan2(p.x());
+    let theta = p.y().asin();
+    (
+        1.0 - (phi + f32::consts::PI) / (2.0 * f32::consts::PI),
+        (theta + f32::consts::PI / 2.0) / f32::consts::PI,
+    )
+}
+
+/*let mut world = HitableList::new();
     let r = (f32::consts::PI / 4.0).cos();
     world
         .list

@@ -33,22 +33,28 @@ impl Sphere {
             if temp < t_max && temp > t_min {
                 let t = temp;
                 let p = r.point_at_parameter(t);
+                let (u, v) = get_sphere_uv(&((p - self.center) / self.radius));
                 return Some(HitRecord::new(
                     t,
                     p,
                     (p - self.center) / self.radius,
                     &self.material,
+                    u,
+                    v,
                 ));
             }
             temp = (-b + (b * b - a * c).sqrt()) / a;
             if temp < t_max && temp > t_min {
                 let t = temp;
                 let p = r.point_at_parameter(t);
+                let (u, v) = get_sphere_uv(&((p - self.center) / self.radius));
                 return Some(HitRecord::new(
                     t,
                     p,
                     (p - self.center) / self.radius,
                     &self.material,
+                    u,
+                    v,
                 ));
             }
         }
@@ -115,6 +121,8 @@ impl MovingSphere {
                     p,
                     (p - self.center(r.time())) / self.radius,
                     &self.material,
+                    0.0,
+                    0.0,
                 ));
             }
             temp = (-b + (b * b - a * c).sqrt()) / a;
@@ -126,6 +134,8 @@ impl MovingSphere {
                     p,
                     (p - self.center(r.time())) / self.radius,
                     &self.material,
+                    0.0,
+                    0.0,
                 ));
             }
         }

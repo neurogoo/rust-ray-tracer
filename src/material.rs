@@ -6,9 +6,9 @@ use vector::*;
 use utils::*;
 use texture::*;
 
-pub enum Scattered<T, E> {
+pub enum Scattered<T> {
     Yes(T),
-    No(E),
+    No,
 }
 
 #[derive(Clone, Debug)]
@@ -16,15 +16,43 @@ pub enum Material {
     Labertian(Labertian),
     Metal(Metal),
     Dielectric(Dielectric),
+    DiffuceLight(DiffuceLight),
 }
 
 impl Material {
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
         match *self {
             Material::Labertian(ref labertian) => labertian.scatter(r_in, rec),
             Material::Metal(ref metal) => metal.scatter(r_in, rec),
             Material::Dielectric(ref dielectric) => dielectric.scatter(r_in, rec),
+            Material::DiffuceLight(ref diffuce) => diffuce.scatter(r_in, rec),
         }
+    }
+
+    pub fn emitted(&self, u: f32, v: f32, p: &Vec3) -> Vec3 {
+        match *self {
+            Material::DiffuceLight(ref diffuce) => diffuce.emitted(u, v, p),
+            _ => Vec3(0.0, 0.0, 0.0),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DiffuceLight {
+    emit: Texture,
+}
+
+impl DiffuceLight {
+    pub fn new(a: Texture) -> DiffuceLight {
+        DiffuceLight { emit: a }
+    }
+
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
+        Scattered::No
+    }
+
+    pub fn emitted(&self, u: f32, v: f32, p: &Vec3) -> Vec3 {
+        self.emit.value(u, v, p)
     }
 }
 
@@ -48,7 +76,7 @@ impl Metal {
         }
     }
 
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
         let reflected = reflect(&unit_vector(r_in.direction()), &rec.normal);
         let scattered = Ray::new(
             rec.p,
@@ -59,7 +87,7 @@ impl Metal {
         if dot(&scattered.direction(), &rec.normal) > 0.0 {
             Scattered::Yes((scattered, attenuation))
         } else {
-            Scattered::No((scattered, attenuation))
+            Scattered::No
         }
     }
 }
@@ -74,10 +102,10 @@ impl Labertian {
         Labertian { albedo: albedo }
     }
 
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
         let target = rec.p + rec.normal + random_in_unit_sphere();
         let scattered = Ray::new(rec.p, target - rec.p, r_in.time());
-        let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
+        let attenuation = self.albedo.value(rec.u, rec.v, &rec.p);
         Scattered::Yes((scattered, attenuation))
     }
 }
@@ -92,7 +120,7 @@ impl Dielectric {
         Dielectric { ref_idx: ref_idx }
     }
 
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3), (Ray, Vec3)> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
         let outward_normal: Vec3;
         let reflected = reflect(&r_in.direction(), &rec.normal);
         let ni_over_nt: f32;

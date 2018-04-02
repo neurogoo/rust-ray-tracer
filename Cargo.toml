@@ -6,3 +6,4 @@ authors = ["Toni Okuogume <tokuogume@gmail.com>"]
 [dependencies]
 rand = "0.4"
 rayon = "1.0"
+stb_image = "0.2.2"
