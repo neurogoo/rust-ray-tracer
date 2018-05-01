@@ -2,6 +2,7 @@ use std::f32;
 
 pub mod rotate;
 pub mod bvhnode;
+pub mod constantmedium;
 
 use vector::Vec3;
 use ray::*;
@@ -10,6 +11,7 @@ use utils::*;
 use sphere::*;
 pub use self::rotate::*;
 pub use self::bvhnode::*;
+pub use self::constantmedium::*;
 
 pub struct HitRecord<'a> {
     pub t: f32,
@@ -50,6 +52,7 @@ pub enum Hitable {
     Box_(Box_),
     Translate(Translate),
     RotateY(RotateY),
+    ConstantMedium(ConstantMedium),
 }
 
 impl Hitable {
@@ -66,6 +69,7 @@ impl Hitable {
             Hitable::Box_(ref box_) => box_.hit(r, t_min, t_max),
             Hitable::Translate(ref translate) => translate.hit(r, t_min, t_max),
             Hitable::RotateY(ref rotate_y) => rotate_y.hit(r, t_min, t_max),
+            Hitable::ConstantMedium(ref conmed) => conmed.hit(r, t_min, t_max),
         }
     }
     pub fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
@@ -81,6 +85,7 @@ impl Hitable {
             Hitable::Box_(ref box_) => box_.bounding_box(t0, t1),
             Hitable::Translate(ref translate) => translate.bounding_box(t0, t1),
             Hitable::RotateY(ref rotate_y) => rotate_y.bounding_box(t0, t1),
+            Hitable::ConstantMedium(ref conmed) => conmed.bounding_box(t0, t1),
         }
     }
 }

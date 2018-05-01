@@ -21,7 +21,7 @@ impl RotateY {
         let cos_theta = radians.cos();
         let mut min = Vec3(f32::MAX, f32::MAX, f32::MAX);
         let mut max = Vec3(f32::MIN, f32::MIN, f32::MIN);
-        let mut hasbox: bool;
+        let hasbox: bool;
         match p.bounding_box(0.0, 1.0) {
             Some(bbox) => {
                 hasbox = true;

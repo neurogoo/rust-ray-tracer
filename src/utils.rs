@@ -16,7 +16,7 @@ pub fn cornell_box(nx: u32, ny: u32) -> (Camera, Vec<Hitable>) {
     let red = new_labertian(new_constant_texture(Vec3(0.65, 0.05, 0.05)));
     let white = new_labertian(new_constant_texture(Vec3(0.73, 0.73, 0.73)));
     let green = new_labertian(new_constant_texture(Vec3(0.12, 0.45, 0.15)));
-    let light = new_diffuce(new_constant_texture(Vec3(15.0, 15.0, 15.0)));
+    let light = new_diffuce(new_constant_texture(Vec3(7.0, 7.0, 7.0)));
     list.push(new_flip_normals(new_yzrect(
         0.0,
         555.0,
@@ -26,7 +26,7 @@ pub fn cornell_box(nx: u32, ny: u32) -> (Camera, Vec<Hitable>) {
         green,
     )));
     list.push(new_yzrect(0.0, 555.0, 0.0, 555.0, 0.0, red));
-    list.push(new_xzrect(213.0, 343.0, 227.0, 332.0, 554.0, light));
+    list.push(new_xzrect(113.0, 443.0, 127.0, 432.0, 554.0, light));
     list.push(new_flip_normals(new_xzrect(
         0.0,
         555.0,
@@ -45,27 +45,35 @@ pub fn cornell_box(nx: u32, ny: u32) -> (Camera, Vec<Hitable>) {
         white.clone(),
     )));
 
-    list.push(new_translate(
-        new_rotate_y(
-            new_box_(
-                Vec3(0.0, 0.0, 0.0),
-                Vec3(165.0, 165.0, 165.0),
-                white.clone(),
+    list.push(new_constant_medium(
+        new_translate(
+            new_rotate_y(
+                new_box_(
+                    Vec3(0.0, 0.0, 0.0),
+                    Vec3(165.0, 165.0, 165.0),
+                    white.clone(),
+                ),
+                -18.0,
             ),
-            -18.0,
+            Vec3(130.0, 0.0, 65.0),
         ),
-        Vec3(130.0, 0.0, 65.0),
+        0.01,
+        new_constant_texture(Vec3(1.0, 1.0, 1.0)),
     ));
-    list.push(new_translate(
-        new_rotate_y(
-            new_box_(
-                Vec3(0.0, 0.0, 0.0),
-                Vec3(165.0, 330.0, 165.0),
-                white.clone(),
+    list.push(new_constant_medium(
+        new_translate(
+            new_rotate_y(
+                new_box_(
+                    Vec3(0.0, 0.0, 0.0),
+                    Vec3(165.0, 330.0, 165.0),
+                    white.clone(),
+                ),
+                15.0,
             ),
-            15.0,
+            Vec3(265.0, 0.0, 295.0),
         ),
-        Vec3(265.0, 0.0, 295.0),
+        0.01,
+        new_constant_texture(Vec3(0.0, 0.0, 0.0)),
     ));
 
     let lookfrom = Vec3(278.0, 278.0, -800.0);
@@ -122,6 +130,10 @@ pub fn simple_light() -> Vec<Hitable> {
         )))),
     ));
     list
+}
+
+pub fn new_constant_medium(b: Hitable, d: f32, a: Texture) -> Hitable {
+    Hitable::ConstantMedium(ConstantMedium::new(b, d, a))
 }
 
 pub fn new_rotate_y(hitable: Hitable, angle: f32) -> Hitable {

@@ -17,6 +17,7 @@ pub enum Material {
     Metal(Metal),
     Dielectric(Dielectric),
     DiffuceLight(DiffuceLight),
+    Isotropic(Isotropic),
 }
 
 impl Material {
@@ -26,6 +27,7 @@ impl Material {
             Material::Metal(ref metal) => metal.scatter(r_in, rec),
             Material::Dielectric(ref dielectric) => dielectric.scatter(r_in, rec),
             Material::DiffuceLight(ref diffuce) => diffuce.scatter(r_in, rec),
+            Material::Isotropic(ref isotropic) => isotropic.scatter(r_in, rec),
         }
     }
 
@@ -34,6 +36,24 @@ impl Material {
             Material::DiffuceLight(ref diffuce) => diffuce.emitted(u, v, p),
             _ => Vec3(0.0, 0.0, 0.0),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Isotropic {
+    albedo: Texture,
+}
+
+impl Isotropic {
+    pub fn new(a: Texture) -> Isotropic {
+        Isotropic { albedo: a }
+    }
+
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered<(Ray, Vec3)> {
+        Scattered::Yes((
+            Ray::new(rec.p, random_in_unit_sphere(), r_in.time()),
+            self.albedo.value(rec.u, rec.v, &rec.p),
+        ))
     }
 }
 
