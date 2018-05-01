@@ -1,3 +1,4 @@
+use std::f32;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
@@ -43,6 +44,9 @@ pub enum Hitable {
     XZRect(XZRect),
     YZRect(YZRect),
     FlipNormals(FlipNormals),
+    Box_(Box_),
+    Translate(Translate),
+    RotateY(RotateY),
 }
 
 impl Hitable {
@@ -56,6 +60,9 @@ impl Hitable {
             Hitable::XZRect(ref xzrect) => xzrect.hit(r, t_min, t_max),
             Hitable::YZRect(ref yzrect) => yzrect.hit(r, t_min, t_max),
             Hitable::FlipNormals(ref flip_normals) => flip_normals.hit(r, t_min, t_max),
+            Hitable::Box_(ref box_) => box_.hit(r, t_min, t_max),
+            Hitable::Translate(ref translate) => translate.hit(r, t_min, t_max),
+            Hitable::RotateY(ref rotate_y) => rotate_y.hit(r, t_min, t_max),
         }
     }
     pub fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
@@ -68,7 +75,206 @@ impl Hitable {
             Hitable::XZRect(ref xzrect) => xzrect.bounding_box(t0, t1),
             Hitable::YZRect(ref yzrect) => yzrect.bounding_box(t0, t1),
             Hitable::FlipNormals(ref flip_normals) => flip_normals.bounding_box(t0, t1),
+            Hitable::Box_(ref box_) => box_.bounding_box(t0, t1),
+            Hitable::Translate(ref translate) => translate.bounding_box(t0, t1),
+            Hitable::RotateY(ref rotate_y) => rotate_y.bounding_box(t0, t1),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct RotateY {
+    ptr: Box<Hitable>,
+    sin_theta: f32,
+    cos_theta: f32,
+    hasbox: bool,
+    bbox: Aabb,
+}
+
+impl RotateY {
+    pub fn new(p: Hitable, angle: f32) -> RotateY {
+        let radians = (f32::consts::PI / 180.0) * angle;
+        let sin_theta = radians.sin();
+        let cos_theta = radians.cos();
+        let mut min = Vec3(f32::MAX, f32::MAX, f32::MAX);
+        let mut max = Vec3(f32::MIN, f32::MIN, f32::MIN);
+        let mut hasbox: bool;
+        match p.bounding_box(0.0, 1.0) {
+            Some(bbox) => {
+                hasbox = true;
+                for i in 0..2 {
+                    for j in 0..2 {
+                        for k in 0..2 {
+                            let x = i as f32 * bbox.max().x() + (1.0 - i as f32) * bbox.min().x();
+                            let y = j as f32 * bbox.max().y() + (1.0 - j as f32) * bbox.min().y();
+                            let z = k as f32 * bbox.max().z() + (1.0 - k as f32) * bbox.min().z();
+                            let new_x = cos_theta * x + sin_theta * z;
+                            let new_z = -sin_theta * x + cos_theta * z;
+                            let tester = Vec3(new_x, y, new_z);
+                            for c in 0..3 {
+                                if tester[c] > max[c] {
+                                    max[c] = tester[c];
+                                }
+                                if tester[c] < min[c] {
+                                    min[c] = tester[c];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            None => {
+                hasbox = false;
+            }
+        };
+        RotateY {
+            ptr: Box::new(p),
+            sin_theta: sin_theta,
+            cos_theta: cos_theta,
+            hasbox: hasbox,
+            bbox: Aabb::new(min, max),
+        }
+    }
+
+    fn hit(&self, r: &Ray, t0: f32, t1: f32) -> Option<HitRecord> {
+        let mut origin = r.origin();
+        let mut direction = r.direction();
+        origin[0] = self.cos_theta * r.origin()[0] - self.sin_theta * r.origin()[2];
+        origin[2] = self.sin_theta * r.origin()[0] + self.cos_theta * r.origin()[2];
+        direction[0] = self.cos_theta * r.direction()[0] - self.sin_theta * r.direction()[2];
+        direction[2] = self.sin_theta * r.direction()[0] + self.cos_theta * r.direction()[2];
+        let rotated_r = Ray::new(origin, direction, r.time());
+        match self.ptr.hit(&rotated_r, t0, t1) {
+            Some(mut rec) => {
+                let mut p = rec.p;
+                let mut normal = rec.normal;
+                p[0] = self.cos_theta * rec.p[0] + self.sin_theta * rec.p[2];
+                p[2] = -self.sin_theta * rec.p[0] + self.cos_theta * rec.p[2];
+                normal[0] = self.cos_theta * rec.normal[0] + self.sin_theta * rec.normal[2];
+                normal[2] = -self.sin_theta * rec.normal[0] + self.cos_theta * rec.normal[2];
+                rec.p = p;
+                rec.normal = normal;
+                return Some(rec);
+            }
+            None => {
+                return None;
+            }
+        }
+    }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
+        if self.hasbox {
+            Some(self.bbox.clone())
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Translate {
+    ptr: Box<Hitable>,
+    offset: Vec3,
+}
+
+impl Translate {
+    pub fn new(p: Hitable, displacement: Vec3) -> Translate {
+        Translate {
+            ptr: Box::new(p),
+            offset: displacement,
+        }
+    }
+
+    fn hit(&self, r: &Ray, t0: f32, t1: f32) -> Option<HitRecord> {
+        let moved_r = Ray::new(r.origin() - self.offset, r.direction(), r.time());
+        match self.ptr.hit(&moved_r, t0, t1) {
+            Some(mut rec) => {
+                rec.p = rec.p + self.offset;
+                Some(rec)
+            }
+            None => None,
+        }
+    }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
+        match self.ptr.bounding_box(t0, t1) {
+            Some(b) => Some(Aabb::new(b.min() + self.offset, b.max() + self.offset)),
+            None => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Box_ {
+    list_ptr: HitableList,
+    pmin: Vec3,
+    pmax: Vec3,
+}
+
+impl Box_ {
+    pub fn new(p0: Vec3, p1: Vec3, ptr: Material) -> Box_ {
+        let mut list_ptr: Vec<Hitable> = Vec::new();
+        list_ptr.push(new_xyrect(
+            p0.x(),
+            p1.x(),
+            p0.y(),
+            p1.y(),
+            p1.z(),
+            ptr.clone(),
+        ));
+        list_ptr.push(new_flip_normals(new_xyrect(
+            p0.x(),
+            p1.x(),
+            p0.y(),
+            p1.y(),
+            p0.z(),
+            ptr.clone(),
+        )));
+        list_ptr.push(new_xzrect(
+            p0.x(),
+            p1.x(),
+            p0.z(),
+            p1.z(),
+            p1.y(),
+            ptr.clone(),
+        ));
+        list_ptr.push(new_flip_normals(new_xzrect(
+            p0.x(),
+            p1.x(),
+            p0.z(),
+            p1.z(),
+            p0.y(),
+            ptr.clone(),
+        )));
+        list_ptr.push(new_yzrect(
+            p0.y(),
+            p1.y(),
+            p0.z(),
+            p1.z(),
+            p1.x(),
+            ptr.clone(),
+        ));
+        list_ptr.push(new_flip_normals(new_yzrect(
+            p0.y(),
+            p1.y(),
+            p0.z(),
+            p1.z(),
+            p0.x(),
+            ptr.clone(),
+        )));
+        Box_ {
+            pmin: p0,
+            pmax: p1,
+            list_ptr: HitableList::new(list_ptr),
+        }
+    }
+
+    fn hit(&self, r: &Ray, t0: f32, t1: f32) -> Option<HitRecord> {
+        self.list_ptr.hit(r, t0, t1)
+    }
+
+    fn bounding_box(&self, t0: f32, t1: f32) -> Option<Aabb> {
+        Some(Aabb::new(self.pmin, self.pmax))
     }
 }
 
@@ -81,6 +287,7 @@ impl FlipNormals {
     pub fn new(p: Hitable) -> FlipNormals {
         FlipNormals { ptr: Box::new(p) }
     }
+
     fn hit(&self, r: &Ray, t0: f32, t1: f32) -> Option<HitRecord> {
         match self.ptr.hit(r, t0, t1) {
             Some(mut rec) => {

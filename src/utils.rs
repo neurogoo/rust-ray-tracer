@@ -42,8 +42,31 @@ pub fn cornell_box(nx: u32, ny: u32) -> (Camera, Vec<Hitable>) {
         0.0,
         555.0,
         555.0,
-        white,
+        white.clone(),
     )));
+
+    list.push(new_translate(
+        new_rotate_y(
+            new_box_(
+                Vec3(0.0, 0.0, 0.0),
+                Vec3(165.0, 165.0, 165.0),
+                white.clone(),
+            ),
+            -18.0,
+        ),
+        Vec3(130.0, 0.0, 65.0),
+    ));
+    list.push(new_translate(
+        new_rotate_y(
+            new_box_(
+                Vec3(0.0, 0.0, 0.0),
+                Vec3(165.0, 330.0, 165.0),
+                white.clone(),
+            ),
+            15.0,
+        ),
+        Vec3(265.0, 0.0, 295.0),
+    ));
 
     let lookfrom = Vec3(278.0, 278.0, -800.0);
     let lookat = Vec3(278.0, 278.0, 0.0);
@@ -101,24 +124,36 @@ pub fn simple_light() -> Vec<Hitable> {
     list
 }
 
-fn new_flip_normals(hitable: Hitable) -> Hitable {
+pub fn new_rotate_y(hitable: Hitable, angle: f32) -> Hitable {
+    Hitable::RotateY(RotateY::new(hitable, angle))
+}
+
+pub fn new_translate(hitable: Hitable, displacement: Vec3) -> Hitable {
+    Hitable::Translate(Translate::new(hitable, displacement))
+}
+
+pub fn new_flip_normals(hitable: Hitable) -> Hitable {
     Hitable::FlipNormals(FlipNormals::new(hitable))
 }
 
-fn new_diffuce(albedo: Texture) -> Material {
+pub fn new_diffuce(albedo: Texture) -> Material {
     Material::DiffuceLight(DiffuceLight::new(albedo))
 }
 
-fn new_xyrect(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material) -> Hitable {
+pub fn new_xyrect(x0: f32, x1: f32, y0: f32, y1: f32, k: f32, material: Material) -> Hitable {
     Hitable::XYRect(XYRect::new(x0, x1, y0, y1, k, material))
 }
 
-fn new_xzrect(x0: f32, x1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
+pub fn new_xzrect(x0: f32, x1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
     Hitable::XZRect(XZRect::new(x0, x1, z0, z1, k, material))
 }
 
-fn new_yzrect(y0: f32, y1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
+pub fn new_yzrect(y0: f32, y1: f32, z0: f32, z1: f32, k: f32, material: Material) -> Hitable {
     Hitable::YZRect(YZRect::new(y0, y1, z0, z1, k, material))
+}
+
+pub fn new_box_(p0: Vec3, p1: Vec3, ptr: Material) -> Hitable {
+    Hitable::Box_(Box_::new(p0, p1, ptr))
 }
 
 pub fn random_in_unit_sphere() -> Vec3 {
